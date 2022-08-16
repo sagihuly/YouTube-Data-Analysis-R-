@@ -1,0 +1,440 @@
+---
+title: "  Youtube Data Analysis"
+output:
+  html_document:
+    df_print: paged
+---
+By: Sagi Huly, Ofir Asher, Elad Asher
+![](youtube-logo.png)
+
+```{r setup, include=FALSE}
+library(hrbrthemes)
+library(viridis)
+library(tidyverse)
+library(ggplot2)
+library(ggcorrplot)
+library(scales)
+library(plotly)
+library(plyr)
+library(grid)
+
+
+knitr::opts_chunk$set(warning = FALSE, message = FALSE)
+knitr::opts_chunk$set(echo = TRUE)
+data_before_tidy <- read.csv("USvideos.csv")
+
+
+```
+
+## [***Introduction***]{style="color:red"}
+
+In the following research, we will examine the youtube videos data set. The data set examined in our research is derived from trending youtube video statistics data set, in our research we decided to focus on US videos data.
+
+The data we used contains a lot of interesting information including: Categories, date of publishing, number of views, likes, dislikes, comments etc. Our data set also contains the dates in which each video was published. it is important to note however, that our data is not perfect - for example, our data doesn't contain any information about July, August, September and October.
+
+In this study we decided to focus on:
+
+1.  Tidy our data set
+
+2.  Visualizations
+
+3.  Statistical Models and methods learned during the course.
+
+4.  Discussion and Summary.
+
+Our main goal in researching the topic discussed above, is to demonstrate and practice the various methods we have been introduced to during the course the semester. While doing so, we decided to use the following methods:
+
+1.  Model of multiple regression.
+2.  Hypothesis test.
+
+During our research, every time number of likes, comments or views are discussed, we decided to showcase the numbers by log scale. The reason we decided to work with log scale in these cases, is to respond to skewness towards large values, i.e., cases in which one or a few points are much larger than the bulk of the data. The second is to show percent change or multiplicative factors.
+
+
+## [***Data Import and Data Tyding***]{style="color:red"}
+
+Firstly, We removed the irrelevant columns and switched the categories IDs into their full category names.
+
+Secondly, we deleted the empty categories we had in the data set.
+
+Thirdly, in order to get rid of the empty categories we had to create a new data set which contains the new categories that we named.
+
+
+```{r cars}
+
+selected_col <- data_before_tidy %>% 
+  select( category_id, publish_time, views, likes, dislikes, comment_count) 
+
+
+
+```
+
+```{r}
+
+head(data_before_tidy)
+temp <- format.Date(selected_col$publish_time , format = "%m" )
+
+new_tab <- cbind2(x= selected_col , y= temp)
+
+
+
+new_tab <- dplyr::rename(new_tab, month = y)
+
+
+new_tab$category_id <- as.character(new_tab$category_id)
+new_tab$category_id[new_tab$category_id == '1'] <- 'Film & Animation' 
+new_tab$category_id[new_tab$category_id == '2'] <- 'Autos & Vehicles' 
+new_tab$category_id[new_tab$category_id == '10'] <- 'Music' 
+new_tab$category_id[new_tab$category_id == '15'] <- 'Pets & Animals' 
+new_tab$category_id[new_tab$category_id == '17'] <- 'Sports' 
+new_tab$category_id[new_tab$category_id == '19'] <- 'Travel & Events' 
+new_tab$category_id[new_tab$category_id == '20'] <- 'Gaming' 
+new_tab$category_id[new_tab$category_id == '22'] <- 'People & Blogs' 
+new_tab$category_id[new_tab$category_id == '23'] <- 'Comedy' 
+new_tab$category_id[new_tab$category_id == '24'] <- 'Entertainment' 
+new_tab$category_id[new_tab$category_id == '25'] <- 'News & Politics' 
+new_tab$category_id[new_tab$category_id == '26'] <- 'Howto & Style' 
+new_tab$category_id[new_tab$category_id == '27'] <- 'Education' 
+ new_tab$category_id[new_tab$category_id == '29'] <- 'Nonprofits & Activism' 
+new_tab$category_id[new_tab$category_id == '43'] <- 'Shows'
+new_tab$category_id [new_tab$category_id == '28'] <- 'Science & Technology'
+
+
+new_tab16 <- new_tab %>%
+  filter(grepl( ("Music"), category_id)) 
+new_tab1 <- new_tab %>%
+  filter(grepl( ("Film & Animation"), category_id)) 
+new_tab2 <- new_tab %>%
+  filter(grepl( ("Autos & Vehicles"), category_id)) 
+new_tab4 <- new_tab %>%
+  filter(grepl( ("Pets & Animals"), category_id)) 
+new_tab5 <- new_tab %>%
+  filter(grepl( ("Sports"), category_id)) 
+new_tab6 <- new_tab %>%
+  filter(grepl( ("Travel & Events"), category_id)) 
+new_tab7 <- new_tab %>%
+  filter(grepl( ("Gaming"), category_id)) 
+new_tab8 <- new_tab %>%
+  filter(grepl( ("People & Blogs"), category_id)) 
+new_tab9 <- new_tab %>%
+  filter(grepl( ("Comedy"), category_id)) 
+new_tab10 <- new_tab %>%
+  filter(grepl( ("Entertainment"), category_id)) 
+new_tab11 <- new_tab %>%
+  filter(grepl( ("News & Politics"), category_id)) 
+new_tab12 <- new_tab %>%
+  filter(grepl( ("Howto & Style"), category_id)) 
+new_tab13 <- new_tab %>%
+  filter(grepl( ("Education"), category_id)) 
+new_tab14 <- new_tab %>%
+  filter(grepl( ("Science & Technology"), category_id)) 
+new_tab15 <- new_tab %>%
+  filter(grepl( ("Nonprofits & Activism"), category_id)) 
+new_tab3 <- new_tab %>%
+  filter(grepl( ("Shows"), category_id)) 
+  
+new <- rbind(new_tab1,new_tab2)
+new <- rbind(new_tab3,new)
+new <- rbind(new_tab4,new)
+new <- rbind(new_tab5,new)
+new <- rbind(new_tab6,new)
+new <- rbind(new_tab7,new)
+new <- rbind(new_tab8,new)
+new <- rbind(new_tab9,new)
+new <- rbind(new_tab10,new)
+new <- rbind(new_tab11,new)
+new <- rbind(new_tab12,new)
+new <- rbind(new_tab13,new)
+new <- rbind(new_tab14,new)
+new <- rbind(new_tab15,new)
+
+for_chi_nomus <- new
+for_chi_mus <- new_tab16
+
+
+new <- rbind(new_tab16,new)
+    
+new <- new %>% filter(month %in% c("01" , "02" , "03" , "04" , "05" , "06" , "11" , "12"))
+new_tab <- new %>% sample_n(1500)
+
+head(new_tab)
+
+########
+```
+
+## [***Visualizations***]{style="color:red"}
+
+In this part of our research, we examine our data set through different graphs using ggplot2, ggcorrplot, scales, plotly, plyr, viridis, hrbrthemes, tidyverse packages.
+
+
+#### 1.The first chart represents the various categories we named. the left side of the chart represents the number of videos of each category. The columns of the chart is sorted by colors - each color represents a different month, the portion of the color in each column represents the portion of the specific month (color) as part of the video sum of each category.
+
+```{r}
+new_tab %>%
+ggplot( aes(x=category_id , fill = month) , ggtheme = ggplot2::theme_gray ) +  
+  geom_bar(position = "stack" ) + theme(axis.text.x = element_text(angle = 60, hjust = 1))
+```
+
+#### 2.The second chart is somewhat similar to the chart above. here, the colors of the columns represents the number of videos in each category, while the total size of each column represents how many videos are in each month.
+
+```{r}
+new_tab %>%
+ggplot( aes(x=month , fill = category_id) , ggtheme = ggplot2::theme_gray ) +  
+  geom_bar(position = "stack" ) + theme(axis.text.x = element_text(angle = 60, hjust = 1)) +
+  scale_y_log10() + scale_y_continuous(labels = comma)
+```
+
+As seen above, our data regarding June is only partial. nevertheless, we have decided to present it.  
+
+#### 3. Each different color of each boxplot in the third chart represents a different category. the chart itself shows the variance and median of likes in each category.
+
+```{r}
+new_tab %>%
+ggplot( aes(x=category_id , y= log1p(likes) ,  fill = category_id) , ggtheme = ggplot2::theme_gray ) +  
+  geom_boxplot() + theme(axis.text.x = element_text(angle = 60, hjust = 1)) +scale_y_comma()
+```
+
+#### 4. Scatter plots of different variables:
+
+```{R}
+cor_likes_views <-  ggplot(selected_col,aes(likes, views))+ geom_count()+
+  ggtitle("Likes and Views")+
+scale_x_continuous(labels= comma) + scale_y_continuous(labels = comma)
+
+cor_likes_dislikes <- ggplot(selected_col,aes(likes, dislikes))+ geom_count() +
+  ggtitle("Likes and Dislikes")+
+scale_x_continuous(labels= comma) + scale_y_continuous(labels = comma)
+
+cor_likes_commments <- ggplot(selected_col,aes(likes, comment_count))+ geom_count() +
+  ggtitle("Likes and Comment counts")+
+scale_x_continuous(labels= comma) + scale_y_continuous(labels = comma)
+
+cor_dislikes_comments <- ggplot(selected_col,aes(dislikes, comment_count))+ geom_count() +
+  ggtitle("Dislikes and Comment counts")+
+scale_x_continuous(labels= comma) + scale_y_continuous(labels = comma)
+
+gridExtra::grid.arrange (cor_likes_views,cor_likes_dislikes, cor_likes_commments,cor_dislikes_comments)
+
+
+```
+
+#### 5. The boxplot chart below represents the variance and median of views in each month.
+
+```{r}
+
+ggplot(new_tab , aes(month ,views )) + geom_boxplot(fill = "red", colour = "black" , outlier.colour = "black", outlier.shape = 1 ,  coef= TRUE) + scale_y_log10() + 
+    ggtitle("views - month boxplot")
+```
+
+#### 6. The boxplot chart below represents the variance and median of comments count in each month.
+
+```{r}
+ggplot(new_tab , aes(month ,comment_count )) + geom_boxplot(fill = "red", colour = "black" , outlier.colour = "black", outlier.shape = 1 ,  coef= TRUE) + scale_y_log10() + 
+    ggtitle("comment_count - month boxplot")
+```
+
+#### 7. The boxplot chart below represents the variance and median of likes in each month.
+
+```{r}
+
+ggplot(new_tab , aes(month ,likes )) + geom_boxplot(fill = "red", colour = "black" , outlier.colour = "black", outlier.shape = 1 ,  coef= TRUE) + scale_y_log10() + 
+    ggtitle("views - month boxplot")
+
+```
+
+#### Like count (in log scale) for each month
+
+```{r}
+new_tab %>%
+  ggplot( aes(x= log1p(likes), y=log1p(views), color = category_id )) +
+    geom_point() +
+    scale_fill_viridis(discrete = TRUE) +
+    theme(legend.position="none") +
+    theme_ipsum() +
+    theme(
+      panel.spacing = unit(0, "lines"),
+      strip.text.x = element_text(size = 8 ),
+      plot.title = element_text(size=13 ) 
+    ) +
+    facet_wrap(~month, scale="free_y") + theme_linedraw() 
+```
+
+#### Like count (in log scale) for each Category
+
+##### multy plot
+
+```{r}
+
+xxx <- new_tab %>% 
+  ggplot( aes(x=log1p(likes), y=log1p(views), color = category_id , fill = category_id)  ) +
+  scale_y_comma() +
+  scale_x_comma() +
+    geom_point(alpha=0.2) +
+    scale_size(range = c(1.4, 19)) +
+    scale_color_viridis(discrete=TRUE, guide=FALSE) +
+    theme_ipsum() +
+    theme(legend.position="none" ,  panel.grid.major.y = element_blank(),
+  panel.grid.minor.y = element_blank() , axis.text.x = element_text(size= 8, angle = 60, vjust = 0.5, hjust=0.5) )+
+  facet_wrap(~category_id  , scale="free_y" ) + theme_linedraw() + theme(legend.position = "none")
+
+xxx
+
+#####
+```
+Seems like there is a correlation between the number of views and likes almost regardless to the category or month. Our interpretation of the above is that more exposure gives you a higher probability for higher likes count.
+
+In the next chapter we will deep dive into the reasoning for higher/ lower likes/views count - 
+
+## [***Statistical Models and methods learned during the course***]{style="color:red"}
+
+## [***Multiple Regression***]{style="color:red"}
+
+Multiple linear regression is used to estimate the relationship between two or more independent variables and one dependent variable
+
+In this part of our work, we are interested in exploring whether there's a relationship between the number of likes (the dependent variable) and the category of the video it is derived from (the independent variables).
+
+### *H0 - There isn't a relationship*
+
+### *H1 - There is a relationship*
+
+Following that, in order to check if the model assumptions are met, firstly - we would like to see if the error is normally distributed, and secondly - Homoscedasticity
+
+As one can tell, viewing our QQPlot below, the error is pretty close to being normally distributed.
+
+```{r}
+
+
+multi <- lm(log1p(likes) ~ category_id  ,data=new_tab)
+
+
+resid_qq<- multi %>% ggplot(aes(sample=.resid )) + scale_x_continuous(labels= comma) + scale_y_continuous(labels = comma) + 
+  geom_qq() + geom_qq_line(col="red") +
+  labs(title="QQ Plot")
+resid_qq
+```
+
+While examining our boxplot chart below, it is clear that there is different variance between the different categories, which means that we cannot conclude there is Homoscedasticity.
+
+```{r}
+new_data <-new_tab %>%
+  mutate(residuals = multi$residuals)
+
+res_homo_age_group <-ggplot(new_data,aes(x=factor(category_id),y= residuals, fill= category_id))+
+  geom_boxplot()+
+  theme(axis.text.x = element_text(size= 8, angle = 60, vjust = 0.5, hjust=0.5))+
+  scale_y_comma() +
+
+  labs(x= "Category", y= "Residuals")
+res_homo_age_group
+
+
+```
+
+Despite the fact that our assumptions aren't fully met, we will execute the model bearing in mind the fact that we cannot fully rely on it.
+
+####### 
+
+```{r}
+summary(multi)
+
+```
+
+While analyzing our model, one can tell that there's a low P-value for most categories. However, the R\^2 of the model is very low. Based on that, we conclude that our model predictions are far from being accurate - there is lot of unexplained variance. We believe it could be the result of missing other variances which affect our average likes count per video, other than the specific category. However, based on our low P-value number, we can assume that category do effect like count per video, but a specific category doesn't accurately predicts likes.
+
+## [***T Test***]{style="color:red"}
+
+## \*\*\*\* Hypothesis Testing \*\*\*\*
+
+A t-test is a statistical test that is used to compare the means of two groups. It is often used in hypothesis testing to determine whether a process or treatment actually has an effect on the population of interest, or whether two groups are different from one another. Here we would like to examine the following hypothesis -
+
+#### **H0 - Average number of views is equal for music & Entertainment**
+
+#### **H1 - Average number of views isn't equal for music & Entertainment**
+
+We started by creating filtered data which contain the Music and Entertainment categories
+
+```{r}
+Enter_mus_data <- new_tab %>% filter(category_id %in%
+                                     c( "Entertainment" , "Music"))
+
+
+Enter_data1 <- new_tab %>% filter(category_id %in%
+                                     c( "Music"))
+Enter_data1 <- Enter_data1$views
+  
+mus_data1 <- new_tab %>% filter(category_id %in%
+                                     c( "Entertainment"))
+mus_data1 <- mus_data1$views
+
+
+```
+
+#### Group by category with their mean and var views:
+
+```{r}
+Enter_mus_data2 <- Enter_mus_data %>% group_by(category_id) %>% dplyr::summarise(mean_score = mean(log1p(views)))
+
+
+glimpse(Enter_mus_data2)
+
+Enter_mus_var <- Enter_mus_data %>% group_by(category_id) %>% dplyr::summarise(var_score = var(log1p(views)))
+
+glimpse(Enter_mus_var)
+```
+
+#### visualization of views mean for both music and entertainment
+
+```{r}
+p2 <- ggplot( Enter_mus_data2, aes(x=category_id, y=mean_score)) + geom_bar(stat="identity") +
+  scale_y_comma()
+
+p2
+
+```
+
+#### visualization of views var for both music and entertainment
+
+```{r}
+var_show <- ggplot( Enter_mus_var, aes(x=category_id, y=var_score)) +geom_bar(stat="identity") +
+  scale_y_comma()
+
+var_show
+```
+
+#### At this point, we would like to preform an F test to find out if the variances of our two tested categorys is equal -
+
+```{r}
+var.test(log1p(Enter_data1) , log1p(mus_data1))
+
+```
+
+#### The P-value we recived is p = 0.6525, which is greater than the significance level of 0.05. In conclusion, there is no significant difference between the two variances.
+
+#### t test assuming normal distribution and equal var
+
+```{r}
+t.test(x = Enter_data1 , y =mus_data1 , alternative = "two.sided" ,  paired = FALSE, var.equal = TRUE ) 
+```
+
+#### We reject the null hypothesis , there is a significant difference in mean between the two variances
+
+######### 
+
+## [***Discussion and Summary***]{style="color:red"}
+
+
+
+In conclusion, in order to extract as much interesting and accurate information as possible, we tried to maintain a structured and professional data analysis framework.
+
+While doing so, we cleaned our data set, while trying to maintain a careful management, maintenance and processing. We used various visualization charts in order to obtain a "clear picture" which allowed us to achieve interesting insights about our data. We also applied various statistical models in order to gather better information.
+
+On a personal note, we think this was a great opportunity to test the various skills we learned during the semester. We believe that during this project we broaden our knowledge about various statistical tools and models, we learned how to process and clean a raw data set and we were also able to achieve new conclusions about our data by doing so.
+
+On a final note, we believe that our analysis could be the first step to a further research in various aspects related to Youtube data. We are aware that our research has its limitations, as described above, but we also hope that it could be used for further research.
+
+![](image.jpeg)
+
+######### 
+
+\`\`\`
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
